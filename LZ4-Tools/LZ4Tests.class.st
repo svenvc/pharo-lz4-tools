@@ -105,6 +105,11 @@ LZ4Tests >> plainTest [
 
 { #category : #tests }
 LZ4Tests >> testClassCommentsCompressionDecompression [
+	self compressDecompress: self plainClassComments utf8Encoded.
+]
+
+{ #category : #tests }
+LZ4Tests >> testClassCommentsCompressionDecompressionLargeBlockSize [
 	| bytes compressor decompressor compressed uncompressed |
 	bytes := self plainClassComments utf8Encoded.
 	compressor := LZ4Compressor new.

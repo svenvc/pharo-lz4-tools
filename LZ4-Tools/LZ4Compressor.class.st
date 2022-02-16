@@ -32,19 +32,16 @@ LZ4Compressor >> compress: bytes [
 
 { #category : #public }
 LZ4Compressor >> compress: bytes to: stream [
-	self writeHeaderTo: stream.
-	bytes isEmpty
+	"Compress bytes to an LZ4 compressed binary stream.
+	This uses the full LZ4 frame format containing multiple blocks."
+
+	bytes size <= blockSize
+		ifTrue: [ 
+			self writeHeaderTo: stream.
+			self compressDataBlock: bytes to: stream.
+			stream nextPutAll: #[0 0 0 0] ]
 		ifFalse: [ 
-			bytes size < 13
-				ifTrue: [ | size |
-					size := bytes size bitAt: 32 put: 1. "uncompressed"
-					stream nextPutAll: ((ByteArray new: 4) unsignedLongAt: 1 put: size bigEndian: false; yourself). 
-					stream nextPutAll: bytes ]
-				ifFalse: [ 
-					self compressBlockInternal: bytes.
-					stream nextPutAll: ((ByteArray new: 4) unsignedLongAt: 1 put: destination size bigEndian: false; yourself).
-					stream next: destination size putAll: destination originalContents startingAt: 1 ] ].
-	stream nextPutAll: #[0 0 0 0]
+			self compressFrom: bytes readStream to: stream ]
 ]
 
 { #category : #public }
@@ -78,9 +75,35 @@ LZ4Compressor >> compressBlockInternal: bytes [
 	self literal: (source size - anchor + 1) match: 0 offset: 0
 ]
 
+{ #category : #private }
+LZ4Compressor >> compressDataBlock: bytes to: stream [
+	bytes isEmpty
+		ifFalse: [ 
+			bytes size < 13
+				ifTrue: [ | size |
+					size := bytes size bitAt: 32 put: 1. "uncompressed"
+					stream nextPutAll: ((ByteArray new: 4) unsignedLongAt: 1 put: size bigEndian: false; yourself). 
+					stream nextPutAll: bytes ]
+				ifFalse: [ 
+					self compressBlockInternal: bytes.
+					stream nextPutAll: ((ByteArray new: 4) unsignedLongAt: 1 put: destination position bigEndian: false; yourself).
+					stream next: destination position putAll: destination originalContents startingAt: 1 ] ]
+]
+
 { #category : #public }
 LZ4Compressor >> compressFrom: inputStream to: outputStream [
 	"Compress from input stream to output stream using the LZ4 frame format containing multiple blocks"
+	
+	| buffer blockCount |
+	buffer := ByteArray new: blockSize.
+	blockCount := 0.
+	self writeHeaderTo: outputStream.
+	[ inputStream atEnd ] whileFalse: [
+		blockCount := blockCount + 1.
+		buffer := inputStream nextInto: buffer.
+		self compressDataBlock: buffer to: outputStream ].
+	outputStream nextPutAll: #[0 0 0 0].
+	^ blockCount
 ]
 
 { #category : #private }
