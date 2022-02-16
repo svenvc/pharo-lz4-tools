@@ -218,6 +218,19 @@ LZ4Tests >> testLoremIpsumDecompression [
 ]
 
 { #category : #tests }
+LZ4Tests >> testObjectAllMethodsBlockCompressionDecompression [
+	| compressor decompressor |
+	compressor := LZ4Compressor new.
+	decompressor := LZ4Decompressor new.
+	decompressor useSmallBlockSize.
+	Object allMethods do: [ :each | 
+		| compressed decompressed |
+		compressed := compressor compressBlock: each sourceCode utf8Encoded.
+		decompressed := decompressor decompressBlock: compressed.
+		self assert: decompressed utf8Decoded equals: each sourceCode ]
+]
+
+{ #category : #tests }
 LZ4Tests >> testSimpleCompressionDecompression [
 	self compressDecompress: self plainSimple utf8Encoded.
 ]

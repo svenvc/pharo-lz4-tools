@@ -142,7 +142,8 @@ LZ4Compressor >> literal: literalLength match: matchLength offset: offset [
 LZ4Compressor >> matchLengthAt: offset [
 	| matchLength |
 	matchLength := 0.
-	[ (source at: sourceIndex + matchLength) = (source at: offset + matchLength) ]
+	[ sourceIndex + matchLength < source size
+			and: [ (source at: sourceIndex + matchLength) = (source at: offset + matchLength) ] ]
 		whileTrue: [ matchLength := matchLength + 1 ].
 	^ matchLength 
 ]
