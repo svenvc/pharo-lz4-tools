@@ -16,7 +16,6 @@ Class {
 		'source',
 		'sourceIndex',
 		'destination',
-		'destinationIndex',
 		'hashtable'
 	],
 	#category : #'LZ4-Tools'
@@ -24,6 +23,9 @@ Class {
 
 { #category : #public }
 LZ4Compressor >> compress: bytes [
+	"Compress bytes, returning an LZ4 compressed byte array.
+	This uses the full LZ4 frame format containing multiple blocks."
+
 	^ ByteArray streamContents: [ :out |
 			self compress: bytes to: out ]
 ]
@@ -40,15 +42,18 @@ LZ4Compressor >> compress: bytes to: stream [
 					stream nextPutAll: bytes ]
 				ifFalse: [ 
 					self compressBlockInternal: bytes.
-					stream nextPutAll: ((ByteArray new: 4) unsignedLongAt: 1 put: destinationIndex bigEndian: false; yourself).
-					stream next: destinationIndex putAll: destination startingAt: 1 ] ].
+					stream nextPutAll: ((ByteArray new: 4) unsignedLongAt: 1 put: destination size bigEndian: false; yourself).
+					stream next: destination size putAll: destination originalContents startingAt: 1 ] ].
 	stream nextPutAll: #[0 0 0 0]
 ]
 
 { #category : #public }
 LZ4Compressor >> compressBlock: bytes [
+	"Compress bytes, returning an LZ4 compressed byte array.
+	This uses the LZ4 block format only, not the LZ4 frame format, for a single block"
+	
 	self compressBlockInternal: bytes.
-	^ destination copyFrom: 1 to: destinationIndex 
+	^ destination contents
 ]
 
 { #category : #private }
@@ -75,6 +80,7 @@ LZ4Compressor >> compressBlockInternal: bytes [
 
 { #category : #public }
 LZ4Compressor >> compressFrom: inputStream to: outputStream [
+	"Compress from input stream to output stream using the LZ4 frame format containing multiple blocks"
 ]
 
 { #category : #private }
@@ -90,6 +96,7 @@ LZ4Compressor >> initialize [
 	super initialize.
 	blockSize := self maxiumumBlockSizes first.
 	hashtable := Array new: 2 ** 16.
+	destination := (ByteArray new: 256) writeStream.
 ]
 
 { #category : #private }
@@ -97,14 +104,14 @@ LZ4Compressor >> literal: literalLength match: matchLength offset: offset [
 	| token |
 	self logLiteral: literalLength match: matchLength offset: offset.
 	token := self tokenForLiteral: literalLength match: matchLength.
-	destination at: (destinationIndex := destinationIndex + 1) put: token.
+	destination nextPut: token.
 	self writeLength: literalLength.
 	sourceIndex - literalLength to: sourceIndex - 1 do: [ :index |
-		destination at: (destinationIndex := destinationIndex + 1) put: (source at: index) ].
+		destination nextPut: (source at: index) ].
 	matchLength = 0 ifTrue: [ ^ self ].
 	"u16int LE"
-	destination at: (destinationIndex := destinationIndex + 1) put: (offset bitAnd: 16rFF).
-	destination at: (destinationIndex := destinationIndex + 1) put: (offset >> 8).
+	destination nextPut: (offset bitAnd: 16rFF).
+	destination nextPut: (offset >> 8).
 	self writeLength: matchLength - 4
 ]
 
@@ -130,12 +137,10 @@ LZ4Compressor >> processQuad [
 
 { #category : #private }
 LZ4Compressor >> setupToCompressBlock: bytes [
-	(destination isNil or: [ destination size < blockSize ])
-		ifTrue: [ destination := ByteArray new: blockSize ].
-	destinationIndex := 0.
-	hashtable atAllPut: nil.
 	source := bytes.
 	sourceIndex := 1. 
+	destination reset.
+	hashtable atAllPut: nil.
 ]
 
 { #category : #private }
@@ -173,13 +178,12 @@ LZ4Compressor >> writeHeaderTo: stream [
 
 { #category : #private }
 LZ4Compressor >> writeLength: length [
-	| extendedLength |
+	| extendedLength byte |
 	length < 15
 		ifTrue: [ ^ self ].
 	extendedLength := length - 15.
 	[ 
-		destination
-			at: (destinationIndex := destinationIndex + 1)
-			put: (extendedLength min: 255).
-		(extendedLength := extendedLength - 255) > 0 ] whileTrue
+		byte := extendedLength min: 255.
+		destination nextPut: byte.
+		(extendedLength := extendedLength - byte) > 0 ] whileTrue
 ]
