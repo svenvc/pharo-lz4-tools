@@ -53,18 +53,13 @@ LZ4Compressor >> compressBlock: bytes [
 
 { #category : #private }
 LZ4Compressor >> compressBlockInternal: bytes [
-	| hash found matchLength anchor literalLength |
-	source := bytes.
-	sourceIndex := anchor := 1.
+	| found matchLength anchor literalLength |
+	self setupToCompressBlock: bytes.
+	anchor := 1.
 	matchLength := 0.
-	self setupBuffer.
 	[ sourceIndex < (source size - 4) ] whileTrue: [
-		hash := (self hashQuadAt: sourceIndex) + 1.
-		found := hashtable at: hash.
-		hashtable at: hash put: sourceIndex.
-		(found isNil 
-			or: [ (sourceIndex - found >= 16rFFFF)
-				or: [ (matchLength := self matchLengthAt: found) < 4 ] ])
+		((found := self processQuad) isNil 
+				or: [ (matchLength := self matchLengthAt: found) < 4 ])
 			ifTrue: [ 
 				sourceIndex := sourceIndex + 1 ]
 			ifFalse: [ 
@@ -123,10 +118,24 @@ LZ4Compressor >> matchLengthAt: offset [
 ]
 
 { #category : #private }
-LZ4Compressor >> setupBuffer [
+LZ4Compressor >> processQuad [
+	| hash found |
+	hash := (self hashQuadAt: sourceIndex) + 1.
+	found := hashtable at: hash.
+	hashtable at: hash put: sourceIndex.
+	^ (found isNil or: [ sourceIndex - found >= 16rFFFF ])
+		ifTrue: [ nil ]
+		ifFalse: [ found ]
+]
+
+{ #category : #private }
+LZ4Compressor >> setupToCompressBlock: bytes [
 	(destination isNil or: [ destination size < blockSize ])
 		ifTrue: [ destination := ByteArray new: blockSize ].
-	destinationIndex := 0
+	destinationIndex := 0.
+	hashtable atAllPut: nil.
+	source := bytes.
+	sourceIndex := 1. 
 ]
 
 { #category : #private }
