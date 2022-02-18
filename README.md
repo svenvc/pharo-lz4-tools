@@ -1,4 +1,4 @@
-#Pharo LZ4 Tools
+# Pharo LZ4 Tools
 
 An implementation of LZ4 compression and decompression in pure Pharo.
 
