@@ -2,6 +2,8 @@
 I am XXHash32. 
 I implement https://github.com/Cyan4973/xxHash/blob/release/doc/xxhash_spec.md
 
+XXHash32 is a fast non-cryptographic hashing algorithm.
+
 API:
 	- #hash: bytes
 	- #hash: bytes seed: u32

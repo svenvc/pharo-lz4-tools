@@ -8,6 +8,21 @@ My public API consists of:
 	- #compress: bytes to: inputStream (LZ4 Frame Format)
 	- #compress: bytes (returning compressed bytes) (LZ4 Frame Format)
 	- #compressBlock: bytes (returning compressed bytes) (LZ4 Block Format)
+	
+Example:
+
+	LZ4Compressor new compressBlock: (String lf join: ($/ split: 'foo/bar/foobar/foobarbaz/end/')) utf8Encoded.
+	
+Implementation:
+
+	I proceed sequentially through the input, one byte at a time. 
+	At each point, I compute a 16-bit hash over the next 4 bytes.
+	I maintain a hashtable (a simple array with 64k slots) mapping each hash to a position.
+	The position corresponding to a hash helps to find a possible starting point for a match.
+	Only matches of at least 4 bytes are considered. The maximum backwards offset is 64k.
+	Hash collision are handled by an overwrite (lastest wins), no entries are ever cleaned up.
+  Input shorter than 12 bytes is never compressed. The last 5 bytes are always literal.
+
 "
 Class {
 	#name : #LZ4Compressor,

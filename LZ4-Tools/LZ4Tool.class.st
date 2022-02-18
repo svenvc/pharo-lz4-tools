@@ -2,6 +2,13 @@
 I am LZ4Tool.
 I am offer functionalility shared by my subclasses.
 
+LZ4 is a lossless compression algorithm that is focused on speed.
+It belongs to the LZ77 family of byte-oriented compression schemes.
+
+The encoding consists of a number of sequences.
+Each sequence copies literals of a certain length from the input 
+and optionally a match of a certain length at a certain offset in the already decoded output.
+
 https://en.wikipedia.org/wiki/LZ4_(compression_algorithm)
 https://lz4.github.io/lz4/
 https://github.com/lz4/lz4

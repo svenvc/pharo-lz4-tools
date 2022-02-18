@@ -8,6 +8,10 @@ My public API consists of:
 	- #decompressFrom: inputStream (returning decompressed bytes) (LZ4 Frame Format)
 	- #decompress: bytes (returning decompressed bytes) (LZ4 Frame Format)
 	- #decompressBlock: bytes (returning decompressed bytes) (LZ4 Block Format)
+	
+Example:
+
+	(LZ4Decompressor new decompressBlock: #[182 102 111 111 10 98 97 114 10 102 111 111 7 0 128 98 97 122 10 101 110 100 10]) utf8Decoded.
 "
 Class {
 	#name : #LZ4Decompressor,
