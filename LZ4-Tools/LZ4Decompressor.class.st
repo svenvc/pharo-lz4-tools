@@ -5,8 +5,9 @@ I am a LZ4Tool.
 My public API consists of:
 
 	- #decompressFrom: inputStream to: outputStream (LZ4 Frame Format)
-	- #decompress: inputStream (LZ4 Frame Format)
-	- #decompressBlock: bytes (LZ4 Block Format)
+	- #decompressFrom: inputStream (returning decompressed bytes) (LZ4 Frame Format)
+	- #decompress: bytes (returning decompressed bytes) (LZ4 Frame Format)
+	- #decompressBlock: bytes (returning decompressed bytes) (LZ4 Block Format)
 "
 Class {
 	#name : #LZ4Decompressor,
@@ -19,6 +20,11 @@ Class {
 	],
 	#category : #'LZ4-Tools'
 }
+
+{ #category : #private }
+LZ4Decompressor >> bufferSize [
+	^ dictionary ifNil: [ current ] ifNotNil: [ current - dictionary size ]
+]
 
 { #category : #private }
 LZ4Decompressor >> bufferStart [
@@ -52,9 +58,9 @@ LZ4Decompressor >> copyBlocksFrom: inputStream to: outputStream [
 				self copyBlockFrom: inputStream size: blockSize ]
 			ifFalse: [ 
 				self decompressBlockFrom: inputStream size: blockSize ].
-		outputStream next: current putAll: buffer startingAt: self bufferStart.
+		outputStream next: self bufferSize putAll: buffer startingAt: self bufferStart.
 		self optionalBlockChecksumFrom: inputStream.
-		current := 0 ].
+		self setupBuffer ].
 	^ blockCount
 ]
 
@@ -71,12 +77,11 @@ LZ4Decompressor >> copyMatch: offset count: count [
 ]
 
 { #category : #public }
-LZ4Decompressor >> decompress: inputStream [
-	"Decompress an LZ4 inputStream returning a byte array.
+LZ4Decompressor >> decompress: bytes [
+	"Decompress bytes, assuming they are LZ4 compressed, returning a byte array.
 	The is assuming the LZ4 frame format containing mulitple blocks."
 	
-	^ ByteArray streamContents: [ :outputStream |
-			self decompressFrom: inputStream to: outputStream ]
+	^ self decompressFrom: bytes readStream
 ]
 
 { #category : #public }
@@ -104,6 +109,15 @@ LZ4Decompressor >> decompressBlockFrom: stream size: blockSize [
 		self copyMatch: offset count: matchLength.
 		self logLiteral: literalLength match: matchLength offset: offset.
 	] repeat
+]
+
+{ #category : #public }
+LZ4Decompressor >> decompressFrom: inputStream [
+	"Decompress an LZ4 inputStream returning a byte array.
+	The is assuming the LZ4 frame format containing mulitple blocks."
+	
+	^ ByteArray streamContents: [ :outputStream |
+			self decompressFrom: inputStream to: outputStream ]
 ]
 
 { #category : #public }
@@ -202,7 +216,7 @@ LZ4Decompressor >> setupBuffer [
 			current := dictionary size ]
 ]
 
-{ #category : #public }
+{ #category : #initialize }
 LZ4Decompressor >> useSmallBlockSize [
 	"The block size to use is set automatically, so there is no need to do anything.
 	However, when using #decompressBlock: the size is set to the maximum.

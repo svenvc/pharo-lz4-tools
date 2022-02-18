@@ -15,7 +15,7 @@ LZ4Tests >> compressDecompress: bytes [
 	compressor := LZ4Compressor new.
 	compressed := compressor compress: bytes.
 	decompressor := LZ4Decompressor new.
-	uncompressed := decompressor decompress: compressed readStream.
+	uncompressed := decompressor decompress: compressed.
 	self assert: uncompressed equals: bytes.
 ]
 
@@ -116,7 +116,7 @@ LZ4Tests >> testClassCommentsCompressionDecompressionLargeBlockSize [
 	compressor useLargeBlockSize.
 	compressed := compressor compress: bytes.
 	decompressor := LZ4Decompressor new.
-	uncompressed := decompressor decompress: compressed readStream.
+	uncompressed := decompressor decompress: compressed.
 	self assert: uncompressed equals: bytes.
 ]
 
@@ -131,7 +131,7 @@ LZ4Tests >> testClassCommentsDecompression [
 	LibC runCommand: 'lz4 ' , txtFile pathString.
 	self assert: lz4File exists.
 	decompressor := LZ4Decompressor new.
-	text := lz4File binaryReadStreamDo: [ :in | decompressor decompress: in ].
+	text := lz4File binaryReadStreamDo: [ :in | decompressor decompressFrom: in ].
 	self assert: text utf8Decoded equals: self plainClassComments.
 	checksum := XXHash32 new hash: text.
 	self assert: checksum equals: decompressor contentChecksum 
@@ -155,7 +155,7 @@ LZ4Tests >> testCountingCompressionDecompression [
 LZ4Tests >> testCountingDecompression [
 	| decompressor result checksum |
 	decompressor := LZ4Decompressor new.
-	result := decompressor decompress: self compressedCounting readStream.
+	result := decompressor decompress: self compressedCounting.
 	self assert: result utf8Decoded equals: self plainCounting.
 	checksum := XXHash32 new hash: result.
 	self assert: checksum equals: decompressor contentChecksum 
@@ -168,6 +168,22 @@ LZ4Tests >> testDecompressSingleBlock [
 	output := LZ4Decompressor new useSmallBlockSize; decompressBlock: input.
 	self assert: input size < output size.
 	self assert: output utf8Decoded equals: self plainSingleBlock
+]
+
+{ #category : #tests }
+LZ4Tests >> testDictionaryNumbers [
+	| dictionary input compressed decompressed |
+	dictionary := (Character space join: ((1 to: 10) collect: #asWords)) utf8Encoded.
+	input := 'four five six one two three the end' utf8Encoded.
+	compressed := LZ4Compressor new dictionary: dictionary; compress: input.
+	self assert: compressed size < input size.
+	decompressed := LZ4Decompressor new dictionary: dictionary; decompress: compressed.
+	self assert: decompressed equals: input.
+	input := 'one two four ten six eight seven three the end' utf8Encoded.
+	compressed := LZ4Compressor new dictionary: dictionary; compress: input.
+	self assert: compressed size < input size.
+	decompressed := LZ4Decompressor new dictionary: dictionary; decompress: compressed.
+	self assert: decompressed equals: input.
 ]
 
 { #category : #tests }
@@ -195,7 +211,7 @@ LZ4Tests >> testEmptyCompressionDecompression [
 LZ4Tests >> testEmptyDecompression [
 	| decompressor result checksum |
 	decompressor := LZ4Decompressor new.
-	result := decompressor decompress: self compressedEmpty readStream.
+	result := decompressor decompress: self compressedEmpty.
 	self assert: result utf8Decoded equals: String empty.
 	checksum := XXHash32 new hash: result.
 	self assert: checksum equals: decompressor contentChecksum 
@@ -210,7 +226,7 @@ LZ4Tests >> testFooCompressionDecompression [
 LZ4Tests >> testFooDecompression [
 	| decompressor result checksum |
 	decompressor := LZ4Decompressor new.
-	result := decompressor decompress: self compressedFoo readStream.
+	result := decompressor decompress: self compressedFoo.
 	self assert: result utf8Decoded equals: self plainFoo.
 	checksum := XXHash32 new hash: result.
 	self assert: checksum equals: decompressor contentChecksum 
@@ -227,7 +243,7 @@ LZ4Tests >> testLoremIpsumDecompression [
 	LibC runCommand: 'lz4 ' , txtFile pathString.
 	self assert: lz4File exists.
 	decompressor := LZ4Decompressor new.
-	text := lz4File binaryReadStreamDo: [ :in | decompressor decompress: in ].
+	text := lz4File binaryReadStreamDo: [ :in | decompressor decompressFrom: in ].
 	self assert: text utf8Decoded equals: String loremIpsum.
 	checksum := XXHash32 new hash: text.
 	self assert: checksum equals: decompressor contentChecksum 
@@ -255,7 +271,7 @@ LZ4Tests >> testSimpleCompressionDecompression [
 LZ4Tests >> testSimpleDecompression [
 	| decompressor result checksum |
 	decompressor := LZ4Decompressor new.
-	result := decompressor decompress: self compressedSimple readStream.
+	result := decompressor decompress: self compressedSimple.
 	self assert: result utf8Decoded equals: self plainSimple.
 	checksum := XXHash32 new hash: result.
 	self assert: checksum equals: decompressor contentChecksum 
@@ -270,7 +286,7 @@ LZ4Tests >> testStarsCompressionDecompression [
 LZ4Tests >> testStarsDecompression [
 	| decompressor result checksum |
 	decompressor := LZ4Decompressor new.
-	result := decompressor decompress: self compressedStars readStream.
+	result := decompressor decompress: self compressedStars.
 	self assert: result utf8Decoded equals: self plainStars.
 	checksum := XXHash32 new hash: result.
 	self assert: checksum equals: decompressor contentChecksum 
@@ -285,7 +301,7 @@ LZ4Tests >> testTestCompressionDecompression [
 LZ4Tests >> testTestDecompression [
 	| decompressor result checksum |
 	decompressor := LZ4Decompressor new.
-	result := decompressor decompress: self compressedTest readStream.
+	result := decompressor decompress: self compressedTest.
 	self assert: result utf8Decoded equals: self plainTest.
 	checksum := XXHash32 new hash: result.
 	self assert: checksum equals: decompressor contentChecksum 

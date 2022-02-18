@@ -5,8 +5,9 @@ I am a LZ4Tool.
 My public API consists of:
 
 	- #compressFrom: inputStream to: outputStream (LZ4 Frame Format)
-	- #compressBlock: bytes to: inputStream (LZ4 Frame Format)
-	- #compressBlock: bytes (LZ4 Block Format)
+	- #compress: bytes to: inputStream (LZ4 Frame Format)
+	- #compress: bytes (returning compressed bytes) (LZ4 Frame Format)
+	- #compressBlock: bytes (returning compressed bytes) (LZ4 Block Format)
 "
 Class {
 	#name : #LZ4Compressor,
@@ -184,7 +185,7 @@ LZ4Compressor >> tokenForLiteral: literalLength match: matchLength [
 	^ (high << 4) + low
 ]
 
-{ #category : #public }
+{ #category : #initialization }
 LZ4Compressor >> useLargeBlockSize [
 	"By default I use the smallest block size,
 	not all input might fit, 
