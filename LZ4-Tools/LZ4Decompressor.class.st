@@ -20,6 +20,11 @@ Class {
 	#category : #'LZ4-Tools'
 }
 
+{ #category : #private }
+LZ4Decompressor >> bufferStart [
+	^ dictionary ifNil: [ 1 ] ifNotNil: [ dictionary size + 1 ]
+]
+
 { #category : #accessing }
 LZ4Decompressor >> contentChecksum [
 	^ info at: #content_checksum
@@ -47,7 +52,7 @@ LZ4Decompressor >> copyBlocksFrom: inputStream to: outputStream [
 				self copyBlockFrom: inputStream size: blockSize ]
 			ifFalse: [ 
 				self decompressBlockFrom: inputStream size: blockSize ].
-		outputStream next: current putAll: buffer startingAt: 1.
+		outputStream next: current putAll: buffer startingAt: self bufferStart.
 		self optionalBlockChecksumFrom: inputStream.
 		current := 0 ].
 	^ blockCount
@@ -82,7 +87,7 @@ LZ4Decompressor >> decompressBlock: bytes [
 	
 	self setupBuffer.
 	self decompressBlockFrom: bytes readStream size: bytes size. 
-	^ buffer copyFrom: 1 to: current
+	^ buffer copyFrom: self bufferStart to: current
 ]
 
 { #category : #private }
@@ -189,7 +194,12 @@ LZ4Decompressor >> setupBuffer [
 		ifNil: [ self maxiumumBlockSizes last ].
 	(buffer isNil or: [ buffer size < size ])
 		ifTrue: [ buffer := ByteArray new: size ].
-	current := 0
+	dictionary
+		ifNil: [ 
+			current := 0 ]
+		ifNotNil: [
+			buffer replaceFrom: 1 to: dictionary size with: dictionary. 
+			current := dictionary size ]
 ]
 
 { #category : #public }

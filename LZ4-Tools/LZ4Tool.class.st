@@ -13,7 +13,8 @@ Class {
 	#name : #LZ4Tool,
 	#superclass : #Object,
 	#instVars : [
-		'debug'
+		'debug',
+		'dictionary'
 	],
 	#category : #'LZ4-Tools'
 }
@@ -21,6 +22,16 @@ Class {
 { #category : #initialization }
 LZ4Tool >> debug: boolean [
 	debug := boolean
+]
+
+{ #category : #initialization }
+LZ4Tool >> dictionary: bytes [
+	"Set the dictionary to be used to bytes.
+	A dictionary allows short input to be compressed using previous knowledge.
+	Both the compressor and decompressor have to use the same dictioary.
+	A dictionary is like a prefix to the actual uncompressed input."
+	
+	dictionary := bytes
 ]
 
 { #category : #initialization }

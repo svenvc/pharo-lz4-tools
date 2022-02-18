@@ -171,6 +171,22 @@ LZ4Tests >> testDecompressSingleBlock [
 ]
 
 { #category : #tests }
+LZ4Tests >> testDictionaryNumbersBlock [
+	| dictionary input compressed decompressed |
+	dictionary := (Character space join: ((1 to: 10) collect: #asWords)) utf8Encoded.
+	input := 'four five six the end' utf8Encoded.
+	compressed := LZ4Compressor new dictionary: dictionary; compressBlock: input.
+	self assert: compressed size < input size.
+	decompressed := LZ4Decompressor new dictionary: dictionary; decompressBlock: compressed.
+	self assert: decompressed equals: input.
+	input := 'eight seven three the end' utf8Encoded.
+	compressed := LZ4Compressor new dictionary: dictionary; compressBlock: input.
+	self assert: compressed size < input size.
+	decompressed := LZ4Decompressor new dictionary: dictionary; decompressBlock: compressed.
+	self assert: decompressed equals: input.
+]
+
+{ #category : #tests }
 LZ4Tests >> testEmptyCompressionDecompression [
 	self compressDecompress: ByteArray empty.
 ]

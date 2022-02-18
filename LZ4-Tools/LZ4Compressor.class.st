@@ -57,7 +57,7 @@ LZ4Compressor >> compressBlock: bytes [
 LZ4Compressor >> compressBlockInternal: bytes [
 	| found matchLength anchor literalLength |
 	self setupToCompressBlock: bytes.
-	anchor := 1.
+	anchor := sourceIndex.
 	matchLength := 0.
 	[ sourceIndex < (source size - 4) ] whileTrue: [
 		((found := self processQuad) isNil 
@@ -161,10 +161,17 @@ LZ4Compressor >> processQuad [
 
 { #category : #private }
 LZ4Compressor >> setupToCompressBlock: bytes [
-	source := bytes.
-	sourceIndex := 1. 
 	destination reset.
 	hashtable atAllPut: nil.
+	dictionary
+		ifNil: [ 
+			source := bytes.
+			sourceIndex := 1 ]
+		ifNotNil: [
+			source := dictionary , bytes.
+			sourceIndex := dictionary size + 1.
+			1 to: dictionary size do: [ :index |
+				hashtable at: (self hashQuadAt: index) + 1 put: index ] ]
 ]
 
 { #category : #private }
